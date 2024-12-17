@@ -41,13 +41,13 @@ void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num)
   point_filter_num = pfilt_num;
 }
 
-void Preprocess::process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out)
+void Preprocess::process(const livox_ros_driver::CustomMsg::ConstPtr &msg, boost::shared_ptr<PointCloudXYZI> &pcl_out)
 {  
   avia_handler(msg);
   *pcl_out = pl_surf;
 }
 
-void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out)
+void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, boost::shared_ptr<PointCloudXYZI> &pcl_out)
 {
   switch (time_unit)
   {

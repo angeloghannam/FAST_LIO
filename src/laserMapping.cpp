@@ -78,8 +78,8 @@ float DET_RANGE = 300.0f;
 const float MOV_THRESHOLD = 1.5f;
 double time_diff_lidar_to_imu = 0.0;
 
-mutex mtx_buffer;
-condition_variable sig_buffer;
+boost::mutex mtx_buffer;
+boost::condition_variable sig_buffer;
 
 string root_dir = ROOT_DIR;
 string map_file_path, lid_topic, imu_topic;

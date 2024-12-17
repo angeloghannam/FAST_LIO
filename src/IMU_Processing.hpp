@@ -22,6 +22,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Vector3.h>
+#include <boost/thread.hpp>
 #include "use-ikfom.hpp"
 #include "preprocess.h"
 
@@ -50,7 +51,7 @@ class ImuProcess
   void set_gyr_bias_cov(const V3D &b_g);
   void set_acc_bias_cov(const V3D &b_a);
   Eigen::Matrix<double, 12, 12> Q;
-  void Process(const MeasureGroup &meas,  esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, PointCloudXYZI::Ptr pcl_un_);
+  void Process(const MeasureGroup &meas,  esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, boost::shared_ptr<PointCloudXYZI> pcl_un_);
 
   ofstream fout_imu;
   V3D cov_acc;
@@ -66,8 +67,8 @@ class ImuProcess
   void IMU_init(const MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, int &N);
   void UndistortPcl(const MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, PointCloudXYZI &pcl_in_out);
 
-  PointCloudXYZI::Ptr cur_pcl_un_;
-  sensor_msgs::ImuConstPtr last_imu_;
+  boost::shared_ptr<const sensor_msgs::Imu> last_imu_;
+  boost::shared_ptr<PointCloudXYZI> cur_pcl_un_;
   deque<sensor_msgs::ImuConstPtr> v_imu_;
   vector<Pose6D> IMUpose;
   vector<M3D>    v_rot_pcl_;
@@ -345,7 +346,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf<state_ikf
   }
 }
 
-void ImuProcess::Process(const MeasureGroup &meas,  esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, PointCloudXYZI::Ptr cur_pcl_un_)
+void ImuProcess::Process(const MeasureGroup &meas,  esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, boost::shared_ptr<PointCloudXYZI> cur_pcl_un_)
 {
   double t1,t2,t3;
   t1 = omp_get_wtime();

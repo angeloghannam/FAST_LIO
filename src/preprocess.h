@@ -6,6 +6,9 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <livox_ros_driver/CustomMsg.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/scoped_ptr.hpp>
 
 using namespace std;
 
@@ -109,8 +112,8 @@ class Preprocess
   Preprocess();
   ~Preprocess();
   
-  void process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
-  void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
+  void process(const livox_ros_driver::CustomMsg::ConstPtr &msg, boost::shared_ptr<PointCloudXYZI> &pcl_out);
+  void process(const sensor_msgs::PointCloud2::ConstPtr &msg, boost::shared_ptr<PointCloudXYZI> &pcl_out);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;

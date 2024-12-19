@@ -102,23 +102,28 @@ vector<PointVector>  Nearest_Points;
 vector<double>       extrinT(3, 0.0);
 vector<double>       extrinR(9, 0.0);
 deque<double>                     time_buffer;
-deque<PointCloudXYZI::Ptr>        lidar_buffer;
-deque<sensor_msgs::Imu::ConstPtr> imu_buffer;
+// Replace std::deque with boost::shared_ptr for the pointers in your deque.
+deque<boost::shared_ptr<PointCloudXYZI>> lidar_buffer;
+deque<boost::shared_ptr<const sensor_msgs::Imu>> imu_buffer;
 
-PointCloudXYZI::Ptr featsFromMap(new PointCloudXYZI());
-PointCloudXYZI::Ptr feats_undistort(new PointCloudXYZI());
-PointCloudXYZI::Ptr feats_down_body(new PointCloudXYZI());
-PointCloudXYZI::Ptr feats_down_world(new PointCloudXYZI());
-PointCloudXYZI::Ptr normvec(new PointCloudXYZI(100000, 1));
-PointCloudXYZI::Ptr laserCloudOri(new PointCloudXYZI(100000, 1));
-PointCloudXYZI::Ptr corr_normvect(new PointCloudXYZI(100000, 1));
-PointCloudXYZI::Ptr _featsArray;
+// Replace raw pointers with boost::shared_ptr for each PointCloudXYZI
+boost::shared_ptr<PointCloudXYZI> featsFromMap(new PointCloudXYZI());
+boost::shared_ptr<PointCloudXYZI> feats_undistort(new PointCloudXYZI());
+boost::shared_ptr<PointCloudXYZI> feats_down_body(new PointCloudXYZI());
+boost::shared_ptr<PointCloudXYZI> feats_down_world(new PointCloudXYZI());
+boost::shared_ptr<PointCloudXYZI> normvec(new PointCloudXYZI(100000, 1));
+boost::shared_ptr<PointCloudXYZI> laserCloudOri(new PointCloudXYZI(100000, 1));
+boost::shared_ptr<PointCloudXYZI> corr_normvect(new PointCloudXYZI(100000, 1));
+boost::shared_ptr<PointCloudXYZI> _featsArray;
 
+// VoxelGrid filter instances (unchanged, because they are not pointers)
 pcl::VoxelGrid<PointType> downSizeFilterSurf;
 pcl::VoxelGrid<PointType> downSizeFilterMap;
 
+// Assuming KD_TREE is a type alias for a specific KD tree type, which remains unchanged
 KD_TREE<PointType> ikdtree;
 
+// V3F and V3D can be replaced if necessary, but here they look fine as value types
 V3F XAxisPoint_body(LIDAR_SP_LEN, 0.0, 0.0);
 V3F XAxisPoint_world(LIDAR_SP_LEN, 0.0, 0.0);
 V3D euler_cur;
@@ -126,19 +131,21 @@ V3D position_last(Zero3d);
 V3D Lidar_T_wrt_IMU(Zero3d);
 M3D Lidar_R_wrt_IMU(Eye3d);
 
-/*** EKF inputs and output ***/
+// EKF inputs and outputs (assuming MeasureGroup and other classes are defined)
 MeasureGroup Measures;
 esekfom::esekf<state_ikfom, 12, input_ikfom> kf;
 state_ikfom state_point;
 vect3 pos_lid;
 
+// ROS message types (no change needed for shared_ptr, as ROS supports them)
 nav_msgs::Path path;
 nav_msgs::Odometry odomAftMapped;
 geometry_msgs::Quaternion geoQuat;
 geometry_msgs::PoseStamped msg_body_pose;
 
-shared_ptr<Preprocess> p_pre(new Preprocess());
-shared_ptr<ImuProcess> p_imu(new ImuProcess());
+// Using shared_ptr for the preprocess and imu process objects
+boost::shared_ptr<Preprocess> p_pre(new Preprocess());
+boost::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
 void SigHandle(int sig)
 {
@@ -287,7 +294,7 @@ void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
         lidar_buffer.clear();
     }
 
-    PointCloudXYZI::Ptr  ptr(new PointCloudXYZI());
+    boost::shared_ptr<PointCloudXYZI>  ptr(new PointCloudXYZI());
     p_pre->process(msg, ptr);
     lidar_buffer.push_back(ptr);
     time_buffer.push_back(msg->header.stamp.toSec());
@@ -323,7 +330,7 @@ void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg)
         printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
     }
 
-    PointCloudXYZI::Ptr  ptr(new PointCloudXYZI());
+    boost::shared_ptr<PointCloudXYZI>  ptr(new PointCloudXYZI());
     p_pre->process(msg, ptr);
     lidar_buffer.push_back(ptr);
     time_buffer.push_back(last_timestamp_lidar);
@@ -473,15 +480,15 @@ void map_incremental()
     kdtree_incremental_time = omp_get_wtime() - st_time;
 }
 
-PointCloudXYZI::Ptr pcl_wait_pub(new PointCloudXYZI(500000, 1));
-PointCloudXYZI::Ptr pcl_wait_save(new PointCloudXYZI());
+boost::shared_ptr<PointCloudXYZI> pcl_wait_pub(new PointCloudXYZI(500000, 1));
+boost::shared_ptr<PointCloudXYZI> pcl_wait_save(new PointCloudXYZI());
 void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
 {
     if(scan_pub_en)
     {
-        PointCloudXYZI::Ptr laserCloudFullRes(dense_pub_en ? feats_undistort : feats_down_body);
+        boost::shared_ptr<PointCloudXYZI> laserCloudFullRes(dense_pub_en ? feats_undistort : feats_down_body);
         int size = laserCloudFullRes->points.size();
-        PointCloudXYZI::Ptr laserCloudWorld( \
+        boost::shared_ptr<PointCloudXYZI> laserCloudWorld( \
                         new PointCloudXYZI(size, 1));
 
         for (int i = 0; i < size; i++)
@@ -504,7 +511,7 @@ void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
     if (pcd_save_en)
     {
         int size = feats_undistort->points.size();
-        PointCloudXYZI::Ptr laserCloudWorld( \
+        boost::shared_ptr<PointCloudXYZI> laserCloudWorld( \
                         new PointCloudXYZI(size, 1));
 
         for (int i = 0; i < size; i++)
@@ -532,7 +539,7 @@ void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
 void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
 {
     int size = feats_undistort->points.size();
-    PointCloudXYZI::Ptr laserCloudIMUBody(new PointCloudXYZI(size, 1));
+    boost::shared_ptr<PointCloudXYZI> laserCloudIMUBody(new PointCloudXYZI(size, 1));
 
     for (int i = 0; i < size; i++)
     {
@@ -550,7 +557,7 @@ void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
 
 void publish_effect_world(const ros::Publisher & pubLaserCloudEffect)
 {
-    PointCloudXYZI::Ptr laserCloudWorld( \
+    boost::shared_ptr<PointCloudXYZI> laserCloudWorld( \
                     new PointCloudXYZI(effct_feat_num, 1));
     for (int i = 0; i < effct_feat_num; i++)
     {
